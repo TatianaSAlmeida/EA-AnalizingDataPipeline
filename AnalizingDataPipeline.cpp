@@ -7,8 +7,10 @@
 #include <bits/stdc++.h>
 using namespace std;
 vector<vector<bool>> adjacent_matrix;
-vector<int> vector_, time_;
+vector<int> vector_, time_, aux;
 vector<bool> visited, stack_;
+priority_queue<int, vector<int>, greater<int>> pq;
+
 int first;
 
 int number_of_tasks;
@@ -143,40 +145,83 @@ bool check_validity_of_pipeline()
     return false;
 }
 
-void print_childs(int n, int stat)
+bool check_if_parents_are_completed(int n)
 {
-    visited[n] = true;
-
-    // print childs
+    aux = vector<int>();
     for (int i = 1; i <= number_of_tasks; ++i)
     {
-        if (adjacent_matrix[i][n] == true && visited[i] == false)
+        if (adjacent_matrix[n][i] == true)
         {
-            if (stat == 1 || (stat == 3 && stack_[i] == false))
-            {
-                cout << i << endl;
-            }
+            aux.push_back(i);
         }
     }
 
-    // call childs
-    for (int i = 1; i <= number_of_tasks; ++i)
+    unsigned long int count = 0;
+    for (unsigned long int i = 0; i < aux.size(); ++i)
     {
-        if (adjacent_matrix[i][n] == true && visited[i] == false)
+        if (visited[aux[i]] == true)
         {
-            print_childs(i, stat);
+            count++;
+        }
+    }
+
+    if (count == aux.size())
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void print_childs(int n, int stat)
+{
+    if (check_if_parents_are_completed(n))
+    {
+        if (stat == 1 || (stat == 3 && stack_[n] == false))
+        {
+            pq.pop();
+            visited[n] = true;
+            cout << n << endl;
+        }
+
+        // call childs
+        for (int i = 1; i <= number_of_tasks; ++i)
+        {
+            if (adjacent_matrix[i][n] == true && visited[i] == false && check_if_parents_are_completed(i))
+            {
+                pq.push(i);
+            }
+        }
+
+        if (!pq.empty())
+        {
+            print_childs(pq.top(), stat);
         }
     }
 }
 
 void mininum_amount_of_time_AND_sequence()
 {
+
     visited = vector<bool>(number_of_tasks + 1, false);
 
     cout << accumulate(time_.begin(), time_.end(), 1) << endl;
 
+    visited[first] = true;
     cout << first << endl;
-    print_childs(first, 1);
+
+    // call childs
+    for (int i = 1; i <= number_of_tasks; ++i)
+    {
+        if (adjacent_matrix[i][first] == true && check_if_parents_are_completed(i))
+        {
+            pq.push(i);
+        }
+    }
+
+    print_childs(pq.top(), 1);
 }
 
 void minimum_amount_of_time()
@@ -272,6 +317,7 @@ int main()
         }
     }
 
+    /*
     cout << "-----------------------------TIME" << endl;
     for (int i = 1; i <= number_of_tasks; ++i)
     {
@@ -291,6 +337,7 @@ int main()
              << endl;
     }
     cout << statistic << endl;
+    */
 
     return 0;
 }
