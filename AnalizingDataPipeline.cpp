@@ -6,8 +6,9 @@
 
 #include <bits/stdc++.h>
 using namespace std;
-vector<vector<bool>> adjacent_matrix;
-vector<int> time_, aux, dp;
+
+vector<vector<int>> parents, childs;
+vector<int> time_, dp, degree;
 vector<bool> visited, stack_;
 priority_queue<int, vector<int>, greater<int>> pq;
 
@@ -15,93 +16,32 @@ int first;
 
 int number_of_tasks;
 
-bool one_initial_task()
+bool check_if_one_initial_task()
 {
-    int counter = 0;
-    bool aux = false;
+    int counter_initial_tasks = 0;
     for (int i = 1; i <= number_of_tasks; ++i)
     {
-        aux = false;
-        for (int j = 1; j <= number_of_tasks; ++j)
-        {
-            if (adjacent_matrix[i][j] == true)
-            {
-                aux = true;
-                break;
-            }
-        }
-        if (!aux)
+        if (parents[i].size() == 0)
         {
             first = i;
-            counter++;
+            counter_initial_tasks++;
         }
     }
-
-    if (counter != 1)
-    {
-        return false;
-    }
-    return true;
+    return counter_initial_tasks == 1;
 }
 
-bool one_final_task()
+bool check_if_one_final_task()
 {
-    int counter = 0;
-    bool aux = false;
+    int counter_final_tasks = 0;
     for (int i = 1; i <= number_of_tasks; ++i)
     {
-        aux = false;
-        for (int j = 1; j <= number_of_tasks; ++j)
+        // if a node has no childs
+        if (childs[i].size() == 0)
         {
-            if (adjacent_matrix[j][i] == true)
-            {
-                aux = true;
-                break;
-            }
-        }
-        if (!aux)
-        {
-            counter++;
+            counter_final_tasks++;
         }
     }
-
-    if (counter != 1)
-    {
-        return false;
-    }
-    return true;
-}
-
-bool pipeline_connected()
-{
-    if (number_of_tasks != 1)
-    {
-        int counter = 0;
-        bool aux = false, aux2 = false;
-        for (int i = 1; i <= number_of_tasks; ++i)
-        {
-            aux = false;
-            aux2 = false;
-            for (int j = 1; j <= number_of_tasks; ++j)
-            {
-                if (adjacent_matrix[j][i] == true)
-                    aux = true;
-
-                if (adjacent_matrix[i][j] == true)
-                    aux2 = true;
-            }
-            if (!aux && !aux2)
-            {
-                counter++;
-            }
-        }
-
-        if (counter != 0)
-        {
-            return false;
-        }
-    }
-    return true;
+    return counter_final_tasks == 1;
 }
 
 bool dfs(int v)
@@ -113,111 +53,97 @@ bool dfs(int v)
         stack_[v] = true;
 
         // Recur for all the vertices adjacent to this vertex
-        for (int i = 1; i <= number_of_tasks; ++i)
+        for (unsigned long int i = 0; i < childs[v].size(); ++i)
         {
-            if (adjacent_matrix[i][v] == true)
-            {
-                if (!visited[i] && dfs(i))
-                    return true;
-                else if (stack_[i])
-                    return true;
-            }
+
+            if (!visited[childs[v][i]] && dfs(childs[v][i]))
+                return true;
+            else if (stack_[childs[v][i]])
+                return true;
         }
     }
     stack_[v] = false; // remove the vertex from recursion stack
     return false;
 }
 
-bool acyclic_pipeline()
+bool acyclic_and_connected_pipeline()
 {
     visited = vector<bool>(number_of_tasks + 1, false);
     stack_ = vector<bool>(number_of_tasks + 1, false);
 
-    return !dfs(first);
+    if (dfs(first))
+    {
+        return false;
+    }
+
+    for (int i = 1; i <= number_of_tasks; ++i)
+    {
+        if (!visited[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool check_validity_of_pipeline()
 {
-    if (pipeline_connected() && one_initial_task() && one_final_task() && acyclic_pipeline())
-    {
-        return true;
-    }
-    return false;
-}
-
-bool check_if_parents_are_completed(int n)
-{
-    aux = vector<int>();
-    for (int i = 1; i <= number_of_tasks; ++i)
-    {
-        if (adjacent_matrix[n][i] == true)
-        {
-            aux.push_back(i);
-        }
-    }
-
-    unsigned long int count = 0;
-    for (unsigned long int i = 0; i < aux.size(); ++i)
-    {
-        if (visited[aux[i]] == true)
-        {
-            count++;
-        }
-    }
-
-    if (count == aux.size())
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    return check_if_one_final_task() && check_if_one_initial_task() && acyclic_and_connected_pipeline();
 }
 
 void print_childs(int n, int stat)
 {
-    if (check_if_parents_are_completed(n))
+
+    if (stat == 1 || (stat == 3 && stack_[n] == false))
     {
-        if (stat == 1 || (stat == 3 && stack_[n] == false))
-        {
-            pq.pop();
-            visited[n] = true;
-            cout << n << endl;
-        }
+        pq.pop();
+        visited[n] = true;
+        cout << n << endl;
+    }
 
-        // call childs
-        for (int i = 1; i <= number_of_tasks; ++i)
-        {
-            if (adjacent_matrix[i][n] == true && visited[i] == false && check_if_parents_are_completed(i))
-            {
-                pq.push(i);
-            }
-        }
+    if (stat == 3 && stack_[n] == true)
+    {
+        visited[n] = true;
+        pq.pop();
+    }
 
-        if (!pq.empty())
+    // call childs
+    for (unsigned long int i = 0; i < childs[n].size(); ++i)
+    {
+        int visit = childs[n][i];
+        degree[visit]++;
+
+        if (visited[visit] == false && (degree[visit] == (int)parents[visit].size()))
         {
-            print_childs(pq.top(), stat);
+            pq.push(visit);
         }
+    }
+
+    if (!pq.empty())
+    {
+        print_childs(pq.top(), stat);
     }
 }
 
 void mininum_amount_of_time_AND_sequence()
 {
 
+    degree = vector<int>(number_of_tasks + 1, 0);
     visited = vector<bool>(number_of_tasks + 1, false);
+    visited[first] = true;
 
     cout << accumulate(time_.begin(), time_.end(), 1) << endl;
-
-    visited[first] = true;
     cout << first << endl;
 
     // call childs
-    for (int i = 1; i <= number_of_tasks; ++i)
+    for (unsigned long int i = 0; i < childs[first].size(); ++i)
     {
-        if (adjacent_matrix[i][first] == true && check_if_parents_are_completed(i))
+        degree[childs[first][i]]++;
+
+        if (degree[childs[first][i]] == (int)parents[childs[first][i]].size())
         {
-            pq.push(i);
+            pq.push(childs[first][i]);
         }
     }
 
@@ -226,15 +152,14 @@ void mininum_amount_of_time_AND_sequence()
 
 void recursion(int node)
 {
-    vector<int> childs;
     bool leaf = true;
-    for (int i = 1; i <= number_of_tasks; ++i)
+    for (unsigned long int i = 0; i < childs[node].size(); ++i)
     {
-        if (adjacent_matrix[i][node] == true)
+        leaf = false;
+
+        if (dp[childs[node][i]] == -1)
         {
-            childs.push_back(i);
-            leaf = false;
-            recursion(i);
+            recursion(childs[node][i]);
         }
     }
 
@@ -243,12 +168,13 @@ void recursion(int node)
         dp[node] = time_[node];
         return;
     }
+
     int max_time = 0;
-    for (unsigned long int i = 0; i < childs.size(); ++i)
+    for (unsigned long int i = 0; i < childs[node].size(); ++i)
     {
-        if (max_time < dp[childs[i]])
+        if (max_time < dp[childs[node][i]])
         {
-            max_time = dp[childs[i]];
+            max_time = dp[childs[node][i]];
         }
     }
     dp[node] = max_time + time_[node];
@@ -259,10 +185,10 @@ void minimum_amount_of_time()
 {
     dp = vector<int>(number_of_tasks + 1, -1);
     recursion(first);
-
     cout << dp[first] << endl;
 }
 
+/*
 void bottleneck()
 {
     int first_child = 0;
@@ -293,63 +219,76 @@ void bottleneck()
         }
     }
 
-    cout << first << endl;
-    print_childs(first, 3);
-}
+    // PRINT STACK
+    for (unsigned long int i = 0; i < stack_.size(); ++i)
+    {
+        cout << stack_[i] << " ";
+    }
+    cout << endl
+         << endl;
 
+    visited[first] = true;
+    // call childs
+    for (int i = 1; i <= number_of_tasks; ++i)
+    {
+        if (adjacent_matrix[i][first] == true && check_if_parents_are_completed(i))
+        {
+            pq.push(i);
+        }
+    }
+
+    cout << first << endl;
+    print_childs(pq.top(), 3);
+}
+*/
 int main()
 {
-    string line, aux;
-    int number, statistic;
+    int number, statistic, number_of_parents;
 
-    while (getline(cin, aux))
+    cin >> number_of_tasks;
+
+    time_ = vector<int>(number_of_tasks + 1, -1);
+    parents = vector<vector<int>>(number_of_tasks + 1, vector<int>());
+    childs = vector<vector<int>>(number_of_tasks + 1, vector<int>());
+
+    for (int i = 1; i <= number_of_tasks; ++i)
     {
-        stringstream ss_aux(aux);
-        ss_aux >> number_of_tasks;
 
-        time_ = vector<int>(number_of_tasks + 1, -1);
-        adjacent_matrix = vector<vector<bool>>(number_of_tasks + 1, vector<bool>(number_of_tasks + 1, false));
+        cin >> number;
+        time_[i] = number;
 
-        for (int i = 1; i <= number_of_tasks; ++i)
+        cin >> number_of_parents;
+
+        for (int j = 0; j < number_of_parents; ++j)
         {
-            getline(cin, line);
-            stringstream ss(line);
-
-            ss >> number;
-            time_[i] = number;
-
-            ss >> number;
-            while (ss >> number)
-            {
-                adjacent_matrix[i][number] = true;
-            }
+            cin >> number;
+            parents[i].push_back(number);
+            childs[number].push_back(i);
         }
+    }
+    cin >> statistic;
 
-        cin >> statistic;
-
-        if (check_validity_of_pipeline())
+    if (check_validity_of_pipeline())
+    {
+        switch (statistic)
         {
-            switch (statistic)
-            {
-            case 0:
-                cout << "VALID" << endl;
-                break;
-            case 1:
-                mininum_amount_of_time_AND_sequence();
-                break;
-            case 2:
-                minimum_amount_of_time();
-                break;
-            case 3:
-                // retirar comentario
-                // bottleneck();
-                break;
-            }
+        case 0:
+            cout << "VALID" << endl;
+            break;
+        case 1:
+            mininum_amount_of_time_AND_sequence();
+            break;
+        case 2:
+            minimum_amount_of_time();
+            break;
+        case 3:
+            bottleneck();
+            break;
         }
-        else
-        {
-            cout << "INVALID" << endl;
-        }
+    }
+    else
+    {
+        cout << "INVALID" << endl;
     }
 
     /*
