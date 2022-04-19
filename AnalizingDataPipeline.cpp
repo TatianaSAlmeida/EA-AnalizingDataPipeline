@@ -8,8 +8,8 @@
 using namespace std;
 
 vector<vector<int>> parents, childs;
-vector<int> time_, dp, degree;
-vector<bool> visited, stack_;
+vector<int> time_, dp, degree, right_order;
+vector<bool> visited, stack_, visited_childs, visited_parents;
 priority_queue<int, vector<int>, greater<int>> pq;
 
 int first;
@@ -53,7 +53,7 @@ bool dfs(int v)
         stack_[v] = true;
 
         // Recur for all the vertices adjacent to this vertex
-        for (unsigned long int i = 0; i < childs[v].size(); ++i)
+        for (size_t i = 0; i < childs[v].size(); ++i)
         {
 
             if (!visited[childs[v][i]] && dfs(childs[v][i]))
@@ -137,7 +137,7 @@ void mininum_amount_of_time_AND_sequence()
     cout << first << endl;
 
     // call childs
-    for (unsigned long int i = 0; i < childs[first].size(); ++i)
+    for (size_t i = 0; i < childs[first].size(); ++i)
     {
         degree[childs[first][i]]++;
 
@@ -153,7 +153,7 @@ void mininum_amount_of_time_AND_sequence()
 void recursion(int node)
 {
     bool leaf = true;
-    for (unsigned long int i = 0; i < childs[node].size(); ++i)
+    for (size_t i = 0; i < childs[node].size(); ++i)
     {
         leaf = false;
 
@@ -170,7 +170,7 @@ void recursion(int node)
     }
 
     int max_time = 0;
-    for (unsigned long int i = 0; i < childs[node].size(); ++i)
+    for (size_t i = 0; i < childs[node].size(); ++i)
     {
         if (max_time < dp[childs[node][i]])
         {
@@ -188,59 +188,99 @@ void minimum_amount_of_time()
     cout << dp[first] << endl;
 }
 
-/*
+void call_childs(int node)
+{
+    visited_childs[node] = true;
+
+    for (size_t i = 0; i < childs[node].size(); ++i)
+    {
+        if (!visited_childs[childs[node][i]])
+        {
+            call_childs(childs[node][i]);
+        }
+    }
+}
+
+void call_parents(int node)
+{
+    visited_parents[node] = true;
+
+    for (size_t i = 0; i < parents[node].size(); ++i)
+    {
+        if (!visited_parents[parents[node][i]])
+        {
+            call_parents(parents[node][i]);
+        }
+    }
+}
+
+bool am_I_a_bottleneck(int node)
+{
+    call_childs(node);
+    call_parents(node);
+
+    for (size_t i = 1; i < visited.size(); ++i)
+    {
+
+        if (!visited_parents[i] && !visited_childs[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void helper_function(int n)
+{
+    pq.pop();
+    stack_[n] = true;
+    visited_childs = vector<bool>(number_of_tasks + 1, false);
+    visited_parents = vector<bool>(number_of_tasks + 1, false);
+
+    if (am_I_a_bottleneck(n))
+    {
+        cout << n << endl;
+    }
+
+    // call childs
+    for (unsigned long int i = 0; i < childs[n].size(); ++i)
+    {
+        int visit = childs[n][i];
+        degree[visit]++;
+
+        if (stack_[visit] == false && (degree[visit] == (int)parents[visit].size()))
+        {
+            pq.push(visit);
+        }
+    }
+
+    if (!pq.empty())
+    {
+        helper_function(pq.top());
+    }
+}
+
 void bottleneck()
 {
-    int first_child = 0;
-    bool aux = false;
-
-    visited = vector<bool>(number_of_tasks + 1, false);
-    stack_ = vector<bool>(number_of_tasks + 1, false);
-    for (int i = 1; i <= number_of_tasks; ++i)
-    {
-        first_child = 0;
-        aux = false;
-        for (int j = 1; j <= number_of_tasks; ++j)
-        {
-            if (adjacent_matrix[i][j] == true)
-            {
-                if (first_child != 0)
-                {
-                    aux = true;
-                    stack_[first_child] = true;
-                }
-                first_child = j;
-            }
-        }
-
-        if (aux)
-        {
-            stack_[first_child] = true;
-        }
-    }
-
-    // PRINT STACK
-    for (unsigned long int i = 0; i < stack_.size(); ++i)
-    {
-        cout << stack_[i] << " ";
-    }
-    cout << endl
-         << endl;
-
-    visited[first] = true;
-    // call childs
-    for (int i = 1; i <= number_of_tasks; ++i)
-    {
-        if (adjacent_matrix[i][first] == true && check_if_parents_are_completed(i))
-        {
-            pq.push(i);
-        }
-    }
-
     cout << first << endl;
-    print_childs(pq.top(), 3);
+
+    degree = vector<int>(number_of_tasks + 1, 0);
+    stack_ = vector<bool>(number_of_tasks + 1, false);
+
+    stack_[first] = true;
+    // call childs
+    for (size_t i = 0; i < childs[first].size(); ++i)
+    {
+        degree[childs[first][i]]++;
+
+        if (degree[childs[first][i]] == (int)parents[childs[first][i]].size())
+        {
+            pq.push(childs[first][i]);
+        }
+    }
+    helper_function(pq.top());
 }
-*/
+
 int main()
 {
     int number, statistic, number_of_parents;
