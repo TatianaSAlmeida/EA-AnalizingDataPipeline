@@ -7,7 +7,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 vector<vector<bool>> adjacent_matrix;
-vector<int> vector_, time_, aux;
+vector<int> time_, aux, dp;
 vector<bool> visited, stack_;
 priority_queue<int, vector<int>, greater<int>> pq;
 
@@ -224,8 +224,43 @@ void mininum_amount_of_time_AND_sequence()
     print_childs(pq.top(), 1);
 }
 
+void recursion(int node)
+{
+    vector<int> childs;
+    bool leaf = true;
+    for (int i = 1; i <= number_of_tasks; ++i)
+    {
+        if (adjacent_matrix[i][node] == true)
+        {
+            childs.push_back(i);
+            leaf = false;
+            recursion(i);
+        }
+    }
+
+    if (leaf)
+    {
+        dp[node] = time_[node];
+        return;
+    }
+    int max_time = 0;
+    for (unsigned long int i = 0; i < childs.size(); ++i)
+    {
+        if (max_time < dp[childs[i]])
+        {
+            max_time = dp[childs[i]];
+        }
+    }
+    dp[node] = max_time + time_[node];
+    return;
+}
+
 void minimum_amount_of_time()
 {
+    dp = vector<int>(number_of_tasks + 1, -1);
+    recursion(first);
+
+    cout << dp[first] << endl;
 }
 
 void bottleneck()
@@ -294,7 +329,6 @@ int main()
 
         if (check_validity_of_pipeline())
         {
-            cout << "first: " << first << endl;
             switch (statistic)
             {
             case 0:
@@ -307,7 +341,8 @@ int main()
                 minimum_amount_of_time();
                 break;
             case 3:
-                bottleneck();
+                // retirar comentario
+                // bottleneck();
                 break;
             }
         }
