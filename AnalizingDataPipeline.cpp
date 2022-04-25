@@ -92,21 +92,11 @@ bool check_validity_of_pipeline()
     return check_if_one_final_task() && check_if_one_initial_task() && acyclic_and_connected_pipeline();
 }
 
-void print_childs(int n, int stat)
+void print_childs(int n)
 {
-
-    if (stat == 1 || (stat == 3 && stack_[n] == false))
-    {
-        pq.pop();
-        visited[n] = true;
-        cout << n << endl;
-    }
-
-    if (stat == 3 && stack_[n] == true)
-    {
-        visited[n] = true;
-        pq.pop();
-    }
+    pq.pop();
+    visited[n] = true;
+    cout << n << endl;
 
     // call childs
     for (unsigned long int i = 0; i < childs[n].size(); ++i)
@@ -122,7 +112,7 @@ void print_childs(int n, int stat)
 
     if (!pq.empty())
     {
-        print_childs(pq.top(), stat);
+        print_childs(pq.top());
     }
 }
 
@@ -147,7 +137,7 @@ void mininum_amount_of_time_AND_sequence()
         }
     }
 
-    print_childs(pq.top(), 1);
+    print_childs(pq.top());
 }
 
 void recursion(int node)
@@ -221,7 +211,6 @@ bool am_I_a_bottleneck(int node)
 
     for (size_t i = 1; i < visited.size(); ++i)
     {
-
         if (!visited_parents[i] && !visited_childs[i])
         {
             return false;
@@ -330,28 +319,6 @@ int main()
     {
         cout << "INVALID" << endl;
     }
-
-    /*
-    cout << "-----------------------------TIME" << endl;
-    for (int i = 1; i <= number_of_tasks; ++i)
-    {
-        cout << time_[i] << " ";
-    }
-    cout << endl;
-
-    cout << "ADJACENT MATRIX " << endl;
-    for (int i = 1; i <= number_of_tasks; i++)
-    {
-        cout << "NODE NUMBER: " << i << endl;
-        for (int j = 1; j <= number_of_tasks; ++j)
-        {
-            cout << adjacent_matrix[i][j] << " ";
-        }
-        cout << endl
-             << endl;
-    }
-    cout << statistic << endl;
-    */
 
     return 0;
 }
